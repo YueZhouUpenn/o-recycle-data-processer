@@ -275,7 +275,7 @@ mvn spring-boot:run -Dspring-boot.run.mainClass="com.company.recycle.web.WebAppl
 
 - **快速上手**：[QUICK_START.md](QUICK_START.md)
 - **详细使用**：[WEB_USAGE.md](WEB_USAGE.md)
-- **项目说明**：[README.md](README.md)
+- **项目说明**：[README.md](../README.md)
 - **项目总结**：[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)
 
 ## ✅ 测试建议

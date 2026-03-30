@@ -209,7 +209,7 @@ mvn clean compile
 
 - [QUICK_START.md](QUICK_START.md) - 快速开始指南
 - [WEB_USAGE.md](WEB_USAGE.md) - Web界面使用说明
-- [README.md](README.md) - 项目完整说明
+- [README.md](../README.md) - 项目完整说明
 
 ## 🆘 仍然无法解决？
 

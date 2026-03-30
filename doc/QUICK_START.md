@@ -96,10 +96,15 @@ src/main/resources/
 └── application.properties  # Spring Boot配置
 
 根目录/
-├── start-web.sh            # macOS/Linux启动脚本
-├── start-web.bat           # Windows启动脚本
-├── WEB_USAGE.md            # 详细使用指南
-└── QUICK_START.md          # 本文件
+├── doc/
+│   ├── design/               # PRD、技术方案、前端参考 HTML
+│   │   ├── PRD.md
+│   │   ├── TECH_DESIGN.md
+│   │   └── front_ent_style.htm
+│   ├── WEB_USAGE.md          # 详细使用指南
+│   └── QUICK_START.md        # 本文件
+├── start-web.sh              # macOS/Linux启动脚本
+└── start-web.bat             # Windows启动脚本
 ```
 
 ### 修改的文件
@@ -226,10 +231,10 @@ GET /api/export
 ## 📚 更多文档
 
 - **[WEB_USAGE.md](WEB_USAGE.md)** - Web界面详细使用指南
-- **[README.md](README.md)** - 项目完整说明
+- **[README.md](../README.md)** - 项目完整说明
 - **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)** - 项目实施总结
-- **[design/PRD.md](design/PRD.md)** - 产品需求文档
-- **[design/TECH_DESIGN.md](design/TECH_DESIGN.md)** - 技术设计方案
+- **[PRD.md](design/PRD.md)** - 产品需求文档
+- **[TECH_DESIGN.md](design/TECH_DESIGN.md)** - 技术设计方案
 
 ## 🎉 开始使用吧！
 

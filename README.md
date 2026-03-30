@@ -23,15 +23,15 @@
 
 ```
 o-recycle-data-processer/
-├── design/                 # 设计文档
-│   ├── PRD.md             # 产品需求文档
-│   └── TECH_DESIGN.md     # 技术设计方案
+├── doc/                   # 说明文档
+│   ├── design/            # PRD、技术方案、前端参考 HTML
+│   ├── WEB_USAGE.md       # Web 使用指南等
+│   └── ...
 ├── input_test/            # 测试数据集
 ├── data/                  # SQLite 数据库文件
 ├── output/                # 导出文件目录
 ├── start-web.sh           # Web启动脚本（macOS/Linux）
 ├── start-web.bat          # Web启动脚本（Windows）
-├── WEB_USAGE.md           # Web界面使用指南
 └── src/main/
     ├── java/com/company/recycle/
     │   ├── Main.java              # 命令行入口
@@ -80,7 +80,7 @@ mvn exec:java -Dexec.mainClass="com.company.recycle.Main"
 # 然后选择 "6. 启动Web界面"
 ```
 
-详细使用说明：[WEB_USAGE.md](WEB_USAGE.md)
+详细使用说明：[doc/WEB_USAGE.md](doc/WEB_USAGE.md)
 
 ### 3. 使用命令行模式
 
@@ -168,7 +168,7 @@ SQLite 数据库包含 6 张表：
 5. `t_import_batch` - 导入批次日志
 6. `t_anomaly` - 异常记录表
 
-完整设计见：[TECH_DESIGN.md](design/TECH_DESIGN.md)
+完整设计见：[doc/design/TECH_DESIGN.md](doc/design/TECH_DESIGN.md)
 
 ## 业务规则
 
@@ -211,10 +211,10 @@ SQLite 数据库包含 6 张表：
 
 ## 开发者文档
 
-- [PRD 产品需求文档](design/PRD.md)
-- [TECH_DESIGN 技术设计方案](design/TECH_DESIGN.md)
-- [WEB_USAGE Web界面使用指南](WEB_USAGE.md)
-- [PROJECT_SUMMARY 项目实施总结](PROJECT_SUMMARY.md)
+- [PRD 产品需求文档](doc/design/PRD.md)
+- [TECH_DESIGN 技术设计方案](doc/design/TECH_DESIGN.md)
+- [WEB_USAGE Web界面使用指南](doc/WEB_USAGE.md)
+- [PROJECT_SUMMARY 项目实施总结](doc/PROJECT_SUMMARY.md)
 
 ## 常见问题
 

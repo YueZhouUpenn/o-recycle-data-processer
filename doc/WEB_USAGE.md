@@ -212,5 +212,5 @@ server.port=9090  # 改为你需要的端口
 
 如有问题或建议，请查看：
 - 项目文档：`PROJECT_SUMMARY.md`
-- 技术设计：`design/TECH_DESIGN.md`
+- 技术设计：[design/TECH_DESIGN.md](design/TECH_DESIGN.md)
 - 日志文件：`logs/application.log`
