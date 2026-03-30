@@ -6,6 +6,7 @@ import org.apache.poi.ss.usermodel.DateUtil;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
@@ -76,5 +77,33 @@ public class DateParser {
         }
         
         return "";
+    }
+
+    /**
+     * 比较两条 {@link #normalize(String)} 结果（或与之兼容的日期字符串），用于「取更晚业务日期」。
+     * 空或无法解析视为最早；同日同时分则按字符串序稳定比较。
+     */
+    public static int compareNormalized(String a, String b) {
+        return Long.compare(toSortableMillis(a), toSortableMillis(b));
+    }
+
+    private static long toSortableMillis(String normalized) {
+        if (normalized == null || normalized.isBlank()) {
+            return Long.MIN_VALUE;
+        }
+        String s = normalized.trim();
+        try {
+            if (s.length() >= 16 && s.charAt(10) == ' ') {
+                LocalDateTime dt = LocalDateTime.parse(s.substring(0, 16), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+                return dt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+            }
+            if (s.length() >= 10) {
+                LocalDate d = LocalDate.parse(s.substring(0, 10), OUTPUT_FORMAT);
+                return d.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
+            }
+        } catch (Exception ignored) {
+            // fall through
+        }
+        return Long.MIN_VALUE;
     }
 }

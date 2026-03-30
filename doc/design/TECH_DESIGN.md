@@ -235,8 +235,20 @@ sequenceDiagram
 ### 6.4 事务与幂等
 
 - `batch_key = displayFileName + "::" + SHA256(文件字节)`；已存在 → `DuplicateImportException`。
-- 单文件：`setAutoCommit(false)` → 插入批次 → 逐行业务行 → `commit`；任一行失败 → `rollback`。
+- 单文件：`setAutoCommit(false)` → 插入批次 → 业务行写入 → `commit`；任一行失败 → `rollback`。
 - 导入路径 **不写** `t_anomaly`。
+
+**同文件重复序列号（实现分支，与 PRD §5.2 一致）：**
+
+| `file_type` | 行为 | `t_import_batch` |
+|-------------|------|------------------|
+| `出库单` | 先读入全部非空行，按列 **日期**（清洗后）对同序列号保留 **最晚** 一行；同日取 **行号更大** 一行。`total_rows` = 非空行数，`new_rows` = 入库行数，`skip_rows` = 被排除的重复行数。 | `skip_rows` 记录排除行数 |
+| `退货表` | 同上，比较列为 **日期**。 | 同上 |
+| `回收表` / `现场回收` / `统一回收` | 清洗后序列号在同一文件内第二次出现 → `ImportValidationException`（整文件回滚）。 | `skip_rows` 一般为 0 |
+
+日期先后用 `DateParser.normalize` + `DateParser.compareNormalized` 比较（空日期视为最早）。
+
+**Web API**：`POST /api/import` 成功时 `message` 对出库单/退货表为「出库表：已导入…」「退货表：已导入…」文案（见 PRD）；响应体含 `skipRows`（与 `ImportResult.skipRows` 一致）。
 
 ### 6.5 回收来源解析（`FileImporter.resolveRecycleSourceFromRow`）
 

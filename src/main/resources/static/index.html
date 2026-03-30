@@ -835,7 +835,8 @@
             }
             showToast('正在导入，请稍候…');
             try {
-                for (let i = 0; i < importItems.length; i++) {
+                const pendingCount = importItems.length;
+                for (let i = 0; i < pendingCount; i++) {
                     await loadImportBaseline();
                     const it = importItems[i];
                     const fileType = it.detection.importerType;
@@ -854,8 +855,11 @@
                         showToast(msg);
                         return;
                     }
+                    showToast(data.message || '导入成功');
                 }
-                showToast('全部文件导入完成');
+                if (pendingCount > 1) {
+                    showToast('全部文件导入完成');
+                }
                 importItems.length = 0;
                 renderFileList();
                 await loadImportBaseline();

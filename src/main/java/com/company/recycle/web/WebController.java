@@ -206,10 +206,25 @@ public class WebController {
 
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("success", true);
-            body.put("message", importAutoRefresh ? "导入成功，已自动刷新总台账" : "导入成功");
+            String msg;
+            if ("出库单".equals(type)) {
+                msg = String.format("出库表：已导入%d行数据，排除%d行重复序列号", result.newRows, result.skipRows);
+                if (importAutoRefresh) {
+                    msg += "，已自动刷新总台账";
+                }
+            } else if ("退货表".equals(type)) {
+                msg = String.format("退货表：已导入%d行数据，排除%d行重复序列号", result.newRows, result.skipRows);
+                if (importAutoRefresh) {
+                    msg += "，已自动刷新总台账";
+                }
+            } else {
+                msg = importAutoRefresh ? "导入成功，已自动刷新总台账" : "导入成功";
+            }
+            body.put("message", msg);
             body.put("batchId", result.batchId);
             body.put("totalRows", result.totalRows);
             body.put("newRows", result.newRows);
+            body.put("skipRows", result.skipRows);
             body.put("ledgerRefreshed", importAutoRefresh);
             return ResponseEntity.ok(body);
 

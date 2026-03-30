@@ -26,15 +26,19 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * 单文件单事务导入：任一行失败则整文件回滚，导入阶段不向 t_anomaly 写入。
+ * 出库单/退货表：同文件内重复序列号按「日期」取最晚一条入库，其余计入 skip_rows。
+ * 回收类：同文件内重复序列号仍整文件失败（PRD）。
  * 回收/退货导入前要求 t_outbound 已有数据（PRD §5.1.1）；库文件被替换后自动重连并重试一次。
  */
 public class FileImporter {
@@ -44,6 +48,16 @@ public class FileImporter {
 
     /** 与 {@link #insertRecycle} 中列清单、ps.set* 绑定个数一致（修改表结构时须同步改此常量与 set 序列）。 */
     private static final int T_RECYCLE_INSERT_BIND_COUNT = 44;
+
+    private static final class ParsedRow {
+        final int rowNum1Based;
+        final Map<String, String> record;
+
+        ParsedRow(int rowNum1Based, Map<String, String> record) {
+            this.rowNum1Based = rowNum1Based;
+            this.record = record;
+        }
+    }
 
     public static class ImportResult {
         public long batchId;
@@ -123,47 +137,14 @@ public class FileImporter {
                     throw new ImportValidationException("Excel 首行表头为空");
                 }
 
-                int lastRow = sheet.getLastRowNum();
-                for (int i = 1; i <= lastRow; i++) {
-                    Row row = sheet.getRow(i);
-                    if (row == null || isRowEffectivelyEmpty(row, headers.size())) {
-                        continue;
-                    }
-
-                    int rowNum1Based = i + 1;
-                    Map<String, String> record = parseRow(row, headerRow, headers);
-                    record = DataCleaner.cleanRow(record, fileType);
-
-                    String serialNo = record.get("序列号");
-                    if (serialNo == null || serialNo.isEmpty()) {
-                        throw new ImportValidationException("第 " + rowNum1Based + " 行序列号为空");
-                    }
-                    if (seenInFile.contains(serialNo)) {
-                        throw new ImportValidationException("文件内序列号重复: " + serialNo);
-                    }
-                    seenInFile.add(serialNo);
-
-                    validateRecycleRequiredIfNeeded(record, fileType, rowNum1Based);
-
-                    if ("出库单".equals(fileType)) {
-                        insertOutbound(conn, record, batchId);
-                    } else if ("回收表".equals(fileType)) {
-                        String source = resolveRecycleSourceFromRow(record, rowNum1Based);
-                        insertRecycle(conn, record, source, batchId);
-                    } else if ("现场回收".equals(fileType) || "统一回收".equals(fileType)) {
-                        insertRecycle(conn, record, fileType, batchId);
-                    } else if ("退货表".equals(fileType)) {
-                        insertReturn(conn, record, batchId);
-                    } else {
-                        throw new IllegalArgumentException("不支持的 fileType: " + fileType);
-                    }
-
-                    result.newRows++;
-                    result.totalRows++;
+                if ("出库单".equals(fileType) || "退货表".equals(fileType)) {
+                    importOutboundOrReturnDeduped(conn, sheet, headerRow, headers, fileType, batchId, result);
+                } else {
+                    importRecycleLikeRows(conn, sheet, headerRow, headers, fileType, batchId, result, seenInFile);
                 }
             }
 
-            updateBatchStats(conn, batchId, result.totalRows, result.newRows);
+            updateBatchStats(conn, batchId, result.totalRows, result.newRows, result.skipRows);
             conn.commit();
             committed = true;
 
@@ -189,6 +170,122 @@ public class FileImporter {
                 ConnectionManager.returnConnection(conn);
             }
         }
+    }
+
+    /**
+     * 出库单/退货表：先读入全部非空行，按「日期」取同序列号最晚一行入库，其余计入 {@code skipRows}。
+     */
+    private void importOutboundOrReturnDeduped(
+            Connection conn,
+            Sheet sheet,
+            Row headerRow,
+            List<String> headers,
+            String fileType,
+            long batchId,
+            ImportResult result) throws Exception {
+        List<ParsedRow> all = readAllNonEmptyRows(sheet, headerRow, headers, fileType);
+        List<ParsedRow> toInsert = dedupeByLatestDate(all, "日期");
+        result.totalRows = all.size();
+        result.skipRows = all.size() - toInsert.size();
+        for (ParsedRow pr : toInsert) {
+            if ("出库单".equals(fileType)) {
+                insertOutbound(conn, pr.record, batchId);
+            } else {
+                insertReturn(conn, pr.record, batchId);
+            }
+            result.newRows++;
+        }
+    }
+
+    /**
+     * 回收类：文件内重复序列号则整文件失败。
+     */
+    private void importRecycleLikeRows(
+            Connection conn,
+            Sheet sheet,
+            Row headerRow,
+            List<String> headers,
+            String fileType,
+            long batchId,
+            ImportResult result,
+            Set<String> seenInFile) throws Exception {
+        int lastRow = sheet.getLastRowNum();
+        for (int i = 1; i <= lastRow; i++) {
+            Row row = sheet.getRow(i);
+            if (row == null || isRowEffectivelyEmpty(row, headers.size())) {
+                continue;
+            }
+
+            int rowNum1Based = i + 1;
+            Map<String, String> record = parseRow(row, headerRow, headers);
+            record = DataCleaner.cleanRow(record, fileType);
+
+            String serialNo = record.get("序列号");
+            if (serialNo == null || serialNo.isEmpty()) {
+                throw new ImportValidationException("第 " + rowNum1Based + " 行序列号为空");
+            }
+            if (seenInFile.contains(serialNo)) {
+                throw new ImportValidationException("文件内序列号重复: " + serialNo);
+            }
+            seenInFile.add(serialNo);
+
+            validateRecycleRequiredIfNeeded(record, fileType, rowNum1Based);
+
+            if ("回收表".equals(fileType)) {
+                String source = resolveRecycleSourceFromRow(record, rowNum1Based);
+                insertRecycle(conn, record, source, batchId);
+            } else if ("现场回收".equals(fileType) || "统一回收".equals(fileType)) {
+                insertRecycle(conn, record, fileType, batchId);
+            } else {
+                throw new IllegalArgumentException("不支持的 fileType: " + fileType);
+            }
+
+            result.newRows++;
+            result.totalRows++;
+        }
+    }
+
+    private List<ParsedRow> readAllNonEmptyRows(Sheet sheet, Row headerRow, List<String> headers, String fileType)
+            throws ImportValidationException {
+        List<ParsedRow> all = new ArrayList<>();
+        int lastRow = sheet.getLastRowNum();
+        for (int i = 1; i <= lastRow; i++) {
+            Row row = sheet.getRow(i);
+            if (row == null || isRowEffectivelyEmpty(row, headers.size())) {
+                continue;
+            }
+            int rowNum1Based = i + 1;
+            Map<String, String> record = parseRow(row, headerRow, headers);
+            record = DataCleaner.cleanRow(record, fileType);
+            String serialNo = record.get("序列号");
+            if (serialNo == null || serialNo.isEmpty()) {
+                throw new ImportValidationException("第 " + rowNum1Based + " 行序列号为空");
+            }
+            all.add(new ParsedRow(rowNum1Based, record));
+        }
+        return all;
+    }
+
+    /** 同序列号保留业务日期最晚一行；日期相同则保留 Excel 中更靠后的行。 */
+    private List<ParsedRow> dedupeByLatestDate(List<ParsedRow> rows, String dateColumnKey) {
+        Map<String, ParsedRow> best = new LinkedHashMap<>();
+        for (ParsedRow pr : rows) {
+            String serial = pr.record.get("序列号");
+            ParsedRow cur = best.get(serial);
+            if (cur == null) {
+                best.put(serial, pr);
+                continue;
+            }
+            String d1 = DateParser.normalize(cur.record.get(dateColumnKey));
+            String d2 = DateParser.normalize(pr.record.get(dateColumnKey));
+            int cmp = DateParser.compareNormalized(d1, d2);
+            if (cmp < 0) {
+                best.put(serial, pr);
+            } else if (cmp == 0 && pr.rowNum1Based > cur.rowNum1Based) {
+                best.put(serial, pr);
+            }
+        }
+        return new ArrayList<>(best.values());
     }
 
     /**
@@ -437,12 +534,14 @@ public class FileImporter {
         throw new SQLException("Failed to create batch record");
     }
 
-    private void updateBatchStats(Connection conn, long batchId, int total, int newRows) throws SQLException {
-        String sql = "UPDATE t_import_batch SET total_rows = ?, new_rows = ?, skip_rows = 0, anomaly_rows = 0 WHERE id = ?";
+    private void updateBatchStats(Connection conn, long batchId, int total, int newRows, int skipRows)
+            throws SQLException {
+        String sql = "UPDATE t_import_batch SET total_rows = ?, new_rows = ?, skip_rows = ?, anomaly_rows = 0 WHERE id = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, total);
             ps.setInt(2, newRows);
-            ps.setLong(3, batchId);
+            ps.setInt(3, skipRows);
+            ps.setLong(4, batchId);
             ps.executeUpdate();
         }
     }
