@@ -1,0 +1,20 @@
+# Build artifacts
+/target/
+/dependency-reduced-pom.xml
+*.jar
+*.zip
+
+# Runtime data
+/data/
+/logs/
+/output/
+*.db
+*.log
+
+# IDE / OS files
+.DS_Store
+.idea/
+*.iml
+
+# Local delivery package
+/submitToO/

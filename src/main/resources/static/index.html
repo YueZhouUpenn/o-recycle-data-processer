@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>财务回收对账系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #fef8f4;
+            --mint: #d4ecd9;
+            --strawberry: #e63946;
+            --pink-soft: #fadadd;
+            --yellow-bright: #f9dc5c;
+            --lime: #8bc34a;
+            --sky: #a5c9e1;
+            --brown: #5d4037;
+            --brown-light: #8d6e63;
+            --card-border: rgba(93, 64, 55, 0.15);
+            --shadow: 0 8px 32px rgba(93, 64, 55, 0.12);
+            --radius-lg: 28px;
+            --radius-md: 18px;
+            --radius-pill: 9999px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Quicksand', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+            color: var(--brown);
+            background: linear-gradient(165deg, var(--mint) 0%, var(--cream) 45%, #fff5f0 100%);
+        }
+
+        .bg-decor {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background:
+                url('/assets/designPic2.jpeg') right -5% bottom -8% / min(380px, 42vw) no-repeat,
+                url('/assets/designPic3.jpeg') left -8% top 10% / min(280px, 32vw) no-repeat;
+            opacity: 0.22;
+        }
+
+        .bg-decor::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(254, 248, 244, 0.85) 0%, rgba(212, 236, 217, 0.4) 100%);
+        }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1.5rem 1.25rem 3rem;
+        }
+
+        .hero-card {
+            background: rgba(255, 255, 255, 0.92);
+            border: 3px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: 1.75rem 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-card h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--brown);
+            letter-spacing: 0.02em;
+        }
+
+        .hero-card .subtitle {
+            margin-top: 0.35rem;
+            font-size: 0.95rem;
+            color: var(--brown-light);
+            font-weight: 500;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.95rem;
+            padding: 0.65rem 1.4rem;
+            border-radius: var(--radius-pill);
+            border: 3px solid var(--card-border);
+            background: #fff;
+            color: var(--brown-light);
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+        }
+
+        .tab-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--pink-soft), #fff);
+            border-color: var(--strawberry);
+            color: var(--strawberry);
+            box-shadow: 0 4px 16px rgba(230, 57, 70, 0.2);
+        }
+
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        /* 数据导入：整块上传区在视区内水平/垂直居中（避免大屏仅靠左、或上传区视觉上偏上） */
+        #panel-import.panel.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 14rem);
+            padding: 0.5rem 0 1rem;
+        }
+
+        #panel-import .card {
+            width: 100%;
+            max-width: 560px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #panel-import .card h2,
+        #panel-import .card > .hint {
+            text-align: center;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border: 3px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .card h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--brown);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-pill {
+            background: linear-gradient(145deg, #fff, var(--mint));
+            border: 2px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.1rem;
+            text-align: center;
+        }
+
+        .stat-pill .label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--brown-light);
+        }
+
+        .stat-pill .value {
+            font-size: 1.65rem;
+            font-weight: 700;
+            margin-top: 0.25rem;
+            color: var(--strawberry);
+        }
+
+        .stat-pill.alt .value { color: var(--lime); }
+        .stat-pill.warn .value { color: #f57c00; }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .field label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+            color: var(--brown-light);
+        }
+
+        .field input {
+            width: 100%;
+            padding: 0.6rem 0.85rem;
+            border: 2px solid var(--card-border);
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 0.9rem;
+            background: #fff;
+        }
+
+        .field input:focus {
+            outline: none;
+            border-color: var(--sky);
+            box-shadow: 0 0 0 3px rgba(165, 201, 225, 0.35);
+        }
+
+        .rate-box {
+            background: linear-gradient(135deg, var(--yellow-bright), #fff8e1);
+            border: 3px dashed var(--brown-light);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        .rate-box strong {
+            color: var(--strawberry);
+            font-size: 1.05rem;
+        }
+
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            align-items: center;
+        }
+
+        .btn {
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.9rem;
+            padding: 0.65rem 1.25rem;
+            border-radius: var(--radius-pill);
+            border: none;
+            cursor: pointer;
+            transition: transform 0.12s, box-shadow 0.12s;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-strawberry {
+            background: linear-gradient(180deg, var(--strawberry), #c1121f);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(230, 57, 70, 0.35);
+        }
+
+        .btn-strawberry:hover { box-shadow: 0 6px 20px rgba(230, 57, 70, 0.45); }
+
+        .btn-yellow {
+            background: linear-gradient(180deg, var(--yellow-bright), #f0c419);
+            color: var(--brown);
+            border: 2px solid var(--brown-light);
+        }
+
+        .btn-sky {
+            background: linear-gradient(180deg, var(--sky), #7eb8db);
+            color: #fff;
+        }
+
+        .btn-ghost {
+            background: #fff;
+            border: 2px solid var(--card-border);
+            color: var(--brown);
+        }
+
+        .dropzone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            box-sizing: border-box;
+            border: 3px dashed var(--lime);
+            border-radius: var(--radius-md);
+            padding: 2rem 1.25rem;
+            text-align: center;
+            background: rgba(139, 195, 74, 0.08);
+            cursor: pointer;
+            margin-bottom: 1rem;
+            transition: background 0.2s;
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            background: rgba(139, 195, 74, 0.18);
+        }
+
+        .dropzone input { display: none; }
+
+        #panel-import .btn-row {
+            justify-content: center;
+        }
+
+        #panel-import #fileList {
+            width: 100%;
+        }
+
+        .file-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.85rem 1rem;
+            background: #fff;
+            border: 2px solid var(--card-border);
+            border-radius: var(--radius-md);
+            margin-bottom: 0.6rem;
+            text-align: left;
+        }
+
+        .file-row .name { font-weight: 600; word-break: break-all; }
+        .file-row .recognition {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--strawberry);
+            margin-top: 0.35rem;
+        }
+        .file-row .recognition.unknown { color: #c62828; }
+        .file-row .recognition.loading { color: var(--brown-light); font-weight: 600; }
+
+        .recycle-source-select {
+            margin-top: 0.45rem;
+            max-width: 100%;
+            padding: 0.45rem 0.75rem;
+            border-radius: var(--radius-md);
+            border: 2px solid var(--card-border);
+            font-family: inherit;
+            font-size: 0.88rem;
+            background: #fff;
+            color: var(--brown);
+        }
+
+        .hint {
+            font-size: 0.82rem;
+            color: var(--brown-light);
+            margin-top: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.65rem 1rem;
+            border: 2px solid var(--card-border);
+            border-radius: var(--radius-md);
+            font-family: inherit;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+
+        thead {
+            background: linear-gradient(180deg, var(--pink-soft), #fff);
+        }
+
+        th, td {
+            padding: 0.65rem 0.5rem;
+            text-align: left;
+            border-bottom: 2px solid var(--card-border);
+        }
+
+        th { font-weight: 700; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.2rem 0.55rem;
+            border-radius: var(--radius-pill);
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .status-未回收 { background: #fff3e0; color: #e65100; }
+        .status-现场回收 { background: #e8f5e9; color: #2e7d32; }
+        .status-统一回收 { background: #e3f2fd; color: #1565c0; }
+        .status-回收表 { background: #e8f5e9; color: #1b5e20; }
+        .status-退货回收, .status-退货 { background: #ede7f6; color: #4527a0; }
+        .status-问题序列号 { background: #ffebee; color: #c62828; }
+
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 2px solid var(--card-border);
+        }
+
+        .page-btn {
+            font-family: inherit;
+            padding: 0.4rem 0.65rem;
+            border: 2px solid var(--card-border);
+            border-radius: 12px;
+            background: #fff;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .page-btn.active {
+            background: var(--pink-soft);
+            border-color: var(--strawberry);
+            color: var(--strawberry);
+        }
+
+        .page-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .loading, .empty-state, .error {
+            text-align: center;
+            padding: 2rem;
+            color: var(--brown-light);
+        }
+
+        .error { color: #c62828; font-weight: 600; }
+
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(120%);
+            background: var(--brown);
+            color: #fff;
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--radius-pill);
+            font-weight: 600;
+            font-size: 0.88rem;
+            z-index: 100;
+            opacity: 0;
+            transition: transform 0.35s ease, opacity 0.35s ease;
+            max-width: 90vw;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        @media (max-width: 640px) {
+            .hero-card { padding: 1.25rem; }
+            .hero-card h1 { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-decor" aria-hidden="true"></div>
+    <div class="page">
+        <header class="hero-card">
+            <h1>财务回收对账系统</h1>
+            <p class="subtitle">本地数据导入与对账查看 · 手绘童话风界面</p>
+            <nav class="tabs" role="tablist">
+                <button type="button" class="tab-btn active" role="tab" id="tab-dashboard" aria-selected="true" onclick="switchTab('dashboard')">数据看板</button>
+                <button type="button" class="tab-btn" role="tab" id="tab-import" aria-selected="false" onclick="switchTab('import')">数据导入</button>
+                <button type="button" class="tab-btn" role="tab" id="tab-anomaly" aria-selected="false" onclick="switchTab('anomaly')">异常信息</button>
+            </nav>
+        </header>
+
+        <!-- 数据看板 -->
+        <div id="panel-dashboard" class="panel active" role="tabpanel">
+            <div class="card">
+                <h2>全局概览</h2>
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-pill"><div class="label">总出库数</div><div class="value" id="totalOutbound">-</div></div>
+                    <div class="stat-pill alt"><div class="label">已回收数</div><div class="value" id="recycled">-</div></div>
+                    <div class="stat-pill warn"><div class="label">未回收数</div><div class="value" id="unrecycled">-</div></div>
+                    <div class="stat-pill"><div class="label">总回收率</div><div class="value" id="recycleRate">-</div></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>总台账</h2>
+                <p class="hint" style="margin-bottom:0.75rem">筛选条件、条件回收率、明细列表与导出为<strong>同一模块</strong>；独立筛选项（非单一关键词框），未填项不参与过滤；服务端对 <code style="font-size:0.85em">t_ledger</code> 执行 SQL。已填写回收起止日时，仅统计「回收日期」落在闭区间内且非空的记录（PRD §5.8）。分页仅影响列表，不改变筛选条件。</p>
+                <div class="filter-grid">
+                    <div class="field">
+                        <label for="fSerial">序列号</label>
+                        <input type="text" id="fSerial" placeholder="模糊匹配 serial_no">
+                    </div>
+                    <div class="field">
+                        <label for="fSales">销售员</label>
+                        <input type="text" id="fSales" placeholder="模糊匹配 salesperson">
+                    </div>
+                    <div class="field">
+                        <label for="fCustomer">客户</label>
+                        <input type="text" id="fCustomer" placeholder="模糊匹配 customer">
+                    </div>
+                    <div class="field">
+                        <label for="fDateStart">回收开始日</label>
+                        <input type="date" id="fDateStart">
+                    </div>
+                    <div class="field">
+                        <label for="fDateEnd">回收结束日</label>
+                        <input type="date" id="fDateEnd">
+                    </div>
+                </div>
+                <div class="btn-row" style="margin-bottom:1rem; flex-wrap:wrap; gap:0.65rem">
+                    <button type="button" class="btn btn-yellow" onclick="searchLedger()">搜索</button>
+                    <button type="button" class="btn btn-ghost" onclick="clearLedgerFilters()">清空</button>
+                    <button type="button" class="btn btn-strawberry" onclick="exportExcel()">导出 Excel</button>
+                </div>
+                <div class="rate-box" id="conditionalRateBox">
+                    参与统计行数：<strong id="condTotal">-</strong>　
+                    其中未回收：<strong id="condUnrec">-</strong>　
+                    条件回收率：<strong id="condRate">-</strong>
+                    <div class="hint" id="condHint"></div>
+                </div>
+                <div style="overflow-x:auto">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>序列号</th>
+                                <th>物料编码</th>
+                                <th>物料名称</th>
+                                <th>规格</th>
+                                <th>出库日期</th>
+                                <th>单据编号</th>
+                                <th>销售员</th>
+                                <th>客户</th>
+                                <th>回收状态</th>
+                                <th>回收日期</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTable">
+                            <tr><td colspan="10" class="loading">加载中…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <div id="pageInfo" class="hint" style="margin:0">显示第 0 - 0 条，共 0 条记录</div>
+                    <div class="btn-row">
+                        <button type="button" class="page-btn" onclick="goToPage(1)">首页</button>
+                        <button type="button" class="page-btn" onclick="goToPage(currentPage - 1)">上一页</button>
+                        <span id="pageNumbers"></span>
+                        <button type="button" class="page-btn" onclick="goToPage(currentPage + 1)">下一页</button>
+                        <button type="button" class="page-btn" onclick="goToPage(totalPages)">末页</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据导入 -->
+        <div id="panel-import" class="panel" role="tabpanel">
+            <div class="card">
+                <h2>上传 Excel</h2>
+                <p class="hint">选择文件后由服务端识别表头；回收类统一识别为「回收表」，现场/统一由行内「回收方式」解析。点击「开始导入」将调用 <code style="font-size:0.8em">POST /api/import</code> 单文件事务入库，成功后默认自动刷新总台账。</p>
+                <p id="importBaselineBanner" class="hint" style="display:none;padding:0.75rem 1rem;border-radius:var(--radius-md);border:2px dashed #e65100;background:#fff8e1;font-weight:600;color:#bf360c"></p>
+                <label class="dropzone" id="dropzone">
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" multiple>
+                    <div>点击或拖拽 .xlsx 到此处</div>
+                    <div class="hint">支持多选 · 四类：销售出库单 / 回收表 / 退货表</div>
+                </label>
+                <div id="fileList"></div>
+                <div class="btn-row">
+                    <button type="button" class="btn btn-strawberry" onclick="startImport()">开始导入</button>
+                    <button type="button" class="btn btn-yellow" onclick="refreshLedger()">刷新总台账</button>
+                </div>
+                <p class="hint">「刷新总台账」将请求后端按当前业务表重算 <code style="font-size:0.8em">t_ledger</code>。多次导入后建议点此统一出结果。</p>
+            </div>
+        </div>
+
+        <!-- 异常信息 -->
+        <div id="panel-anomaly" class="panel" role="tabpanel">
+            <div class="card">
+                <h2>异常信息</h2>
+                <p class="hint" style="margin-bottom:0.75rem">展示 <code>t_anomaly</code> 全表字段（刷新总台账时写入/更新）。仅只读查询；明细条数较多时请使用分页。</p>
+                <div style="overflow-x:auto">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>id</th>
+                                <th>序列号</th>
+                                <th>异常类型</th>
+                                <th>详细说明</th>
+                                <th>涉及来源</th>
+                                <th>批次ID</th>
+                                <th>记录时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="anomalyTable">
+                            <tr><td colspan="7" class="loading">请切换到本 Tab 加载数据</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <div id="anomalyPageInfo" class="hint" style="margin:0">显示第 0 - 0 条，共 0 条记录</div>
+                    <div class="btn-row">
+                        <button type="button" class="page-btn" onclick="goToAnomalyPage(1)">首页</button>
+                        <button type="button" class="page-btn" onclick="goToAnomalyPage(anomalyPage - 1)">上一页</button>
+                        <span id="anomalyPageNumbers"></span>
+                        <button type="button" class="page-btn" onclick="goToAnomalyPage(anomalyPage + 1)">下一页</button>
+                        <button type="button" class="page-btn" onclick="goToAnomalyPage(anomalyTotalPages)">末页</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast" role="status"></div>
+
+    <script>
+        let currentPage = 1;
+        let pageSize = 50;
+        let totalPages = 1;
+        let totalRecords = 0;
+
+        let anomalyPage = 1;
+        let anomalyPageSize = 50;
+        let anomalyTotalPages = 1;
+        let anomalyTotalRecords = 0;
+
+        /** 与 GET /api/ledger、conditional-summary、export 共用 */
+        function ledgerFilterParams() {
+            const p = new URLSearchParams();
+            const sn = document.getElementById('fSerial').value.trim();
+            const sp = document.getElementById('fSales').value.trim();
+            const c = document.getElementById('fCustomer').value.trim();
+            const ds = document.getElementById('fDateStart').value;
+            const de = document.getElementById('fDateEnd').value;
+            if (sn) p.set('serialNo', sn);
+            if (sp) p.set('salesperson', sp);
+            if (c) p.set('customer', c);
+            if (ds) p.set('recycleDateStart', ds);
+            if (de) p.set('recycleDateEnd', de);
+            return p;
+        }
+
+        /** 每项：{ file, detection, detecting }；detection 为 /api/import/detect 返回体 */
+        const importItems = [];
+
+        /** PRD §5.1.1：来自 GET /api/import/baseline */
+        let importBaseline = { outboundRowCount: 0, recycleReturnImportAllowed: false };
+
+        function isRecycleOrReturnFileType(item) {
+            const d = item.detection;
+            if (!d || !d.success) return false;
+            if (d.status !== 'MATCHED') return false;
+            const t = d.importerType;
+            return t === '回收表' || t === '现场回收' || t === '统一回收' || t === '退货表';
+        }
+
+        function updateBaselineBanner() {
+            const el = document.getElementById('importBaselineBanner');
+            if (!el) return;
+            if (importBaseline.recycleReturnImportAllowed) {
+                el.style.display = 'none';
+                el.textContent = '';
+            } else {
+                el.style.display = 'block';
+                el.textContent = '当前库中尚无销售出库数据：请先导入「销售出库单」，再导入回收表或退货表。若刚替换或清空过数据库，也需先导入出库单。';
+            }
+        }
+
+        async function loadImportBaseline() {
+            try {
+                const res = await fetch('/api/import/baseline');
+                const data = await res.json();
+                if (data.success) {
+                    importBaseline.outboundRowCount = data.outboundRowCount ?? 0;
+                    importBaseline.recycleReturnImportAllowed = !!data.recycleReturnImportAllowed;
+                }
+            } catch (e) {
+                console.warn(e);
+            }
+            updateBaselineBanner();
+        }
+
+        function showToast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 3200);
+        }
+
+        function switchTab(name) {
+            const dash = document.getElementById('panel-dashboard');
+            const anom = document.getElementById('panel-anomaly');
+            const imp = document.getElementById('panel-import');
+            const bDash = document.getElementById('tab-dashboard');
+            const bAnom = document.getElementById('tab-anomaly');
+            const bImp = document.getElementById('tab-import');
+            const wasOnImport = imp.classList.contains('active');
+
+            [dash, anom, imp].forEach(p => p.classList.remove('active'));
+            [bDash, bAnom, bImp].forEach(b => b.classList.remove('active'));
+
+            if (name === 'dashboard') {
+                dash.classList.add('active');
+                bDash.classList.add('active');
+                bDash.setAttribute('aria-selected', 'true');
+                bAnom.setAttribute('aria-selected', 'false');
+                bImp.setAttribute('aria-selected', 'false');
+                if (wasOnImport) {
+                    loadStatistics();
+                    loadConditionalSummary();
+                    loadData();
+                }
+            } else if (name === 'anomaly') {
+                anom.classList.add('active');
+                bAnom.classList.add('active');
+                bDash.setAttribute('aria-selected', 'false');
+                bAnom.setAttribute('aria-selected', 'true');
+                bImp.setAttribute('aria-selected', 'false');
+                loadAnomalies();
+            } else {
+                imp.classList.add('active');
+                bImp.classList.add('active');
+                bDash.setAttribute('aria-selected', 'false');
+                bAnom.setAttribute('aria-selected', 'false');
+                bImp.setAttribute('aria-selected', 'true');
+                loadImportBaseline();
+            }
+        }
+
+        function renderFileList() {
+            const box = document.getElementById('fileList');
+            if (!importItems.length) {
+                box.innerHTML = '<p class="hint">暂无已选文件</p>';
+                return;
+            }
+            box.innerHTML = importItems.map((item, i) => {
+                const f = item.file;
+                let line = '';
+                if (item.detecting) {
+                    line = '<div class="recognition loading">正在读取表头并识别类型…</div>';
+                } else if (!item.detection) {
+                    line = '<div class="recognition unknown">未获取识别结果</div>';
+                } else if (!item.detection.success) {
+                    line = `<div class="recognition unknown">${escapeHtml(item.detection.message || '识别失败')}</div>`;
+                } else {
+                    const d = item.detection;
+                    if (d.status === 'UNKNOWN') {
+                        line = `<div class="recognition unknown">${escapeHtml(d.message || '表头无法匹配四类模板')}</div>`;
+                    } else if (d.status === 'MATCHED' && d.displayLabel) {
+                        line = `<div class="recognition">识别对应文件为：${escapeHtml(d.displayLabel)}</div>`;
+                        if (!importBaseline.recycleReturnImportAllowed && isRecycleOrReturnFileType(item)) {
+                            line += '<div class="recognition unknown" style="margin-top:0.35rem">须先导入销售出库单后，本文件方可入库。</div>';
+                        }
+                    } else {
+                        line = '<div class="recognition unknown">未知识别状态</div>';
+                    }
+                }
+                return `<div class="file-row">
+                    <div><div class="name">${escapeHtml(f.name)}</div>${line}</div>
+                    <button type="button" class="btn btn-ghost" onclick="removeImportFile(${i})">移除</button>
+                </div>`;
+            }).join('');
+        }
+
+        function escapeHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        function addImportFiles(fileList) {
+            for (const f of fileList) {
+                if (!importItems.some(x => x.file.name === f.name && x.file.size === f.size)) {
+                    const item = { file: f, detection: null, detecting: true };
+                    importItems.push(item);
+                    detectImportItem(item);
+                }
+            }
+            renderFileList();
+        }
+
+        async function detectImportItem(item) {
+            item.detecting = true;
+            renderFileList();
+            try {
+                const fd = new FormData();
+                fd.append('file', item.file, item.file.name);
+                const res = await fetch('/api/import/detect', { method: 'POST', body: fd });
+                const data = await res.json();
+                item.detection = data;
+            } catch (e) {
+                item.detection = { success: false, message: '请求失败: ' + e.message };
+            } finally {
+                item.detecting = false;
+                renderFileList();
+            }
+        }
+
+        function removeImportFile(i) {
+            importItems.splice(i, 1);
+            renderFileList();
+        }
+
+        async function startImport() {
+            if (!importItems.length) {
+                showToast('请先选择 Excel 文件');
+                return;
+            }
+            if (importItems.some(x => x.detecting)) {
+                showToast('请等待表头识别完成');
+                return;
+            }
+            for (const it of importItems) {
+                if (!it.detection || !it.detection.success) {
+                    showToast('存在未能成功识别表头的文件，请移除或更换后重试');
+                    return;
+                }
+                if (it.detection.status === 'UNKNOWN') {
+                    showToast('存在表头与标准模板不一致的文件，无法导入');
+                    return;
+                }
+            }
+            showToast('正在导入，请稍候…');
+            try {
+                for (let i = 0; i < importItems.length; i++) {
+                    await loadImportBaseline();
+                    const it = importItems[i];
+                    const fileType = it.detection.importerType;
+                    if ((fileType === '回收表' || fileType === '现场回收' || fileType === '统一回收' || fileType === '退货表')
+                            && !importBaseline.recycleReturnImportAllowed) {
+                        showToast('请先导入销售出库单：当前尚无出库主数据，无法导入回收表或退货表。');
+                        return;
+                    }
+                    const fd = new FormData();
+                    fd.append('file', it.file, it.file.name);
+                    fd.append('fileType', fileType);
+                    const res = await fetch('/api/import', { method: 'POST', body: fd });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || !data.success) {
+                        const msg = data.message || ('导入失败 (HTTP ' + res.status + ')');
+                        showToast(msg);
+                        return;
+                    }
+                }
+                showToast('全部文件导入完成');
+                importItems.length = 0;
+                renderFileList();
+                await loadImportBaseline();
+                loadStatistics();
+                if (document.getElementById('panel-dashboard').classList.contains('active')) {
+                    loadConditionalSummary();
+                    loadData();
+                }
+                if (document.getElementById('panel-anomaly').classList.contains('active')) {
+                    anomalyPage = 1;
+                    loadAnomalies();
+                }
+            } catch (e) {
+                showToast('导入请求失败: ' + e.message);
+            }
+        }
+
+        async function refreshLedger() {
+            try {
+                const res = await fetch('/api/ledger/refresh', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message || '总台账已更新');
+                    loadImportBaseline();
+                    loadStatistics();
+                    if (document.getElementById('panel-dashboard').classList.contains('active')) {
+                        loadConditionalSummary();
+                        loadData();
+                    }
+                    if (document.getElementById('panel-anomaly').classList.contains('active')) {
+                        anomalyPage = 1;
+                        loadAnomalies();
+                    }
+                } else {
+                    showToast(data.message || '刷新失败');
+                }
+            } catch (e) {
+                showToast('请求失败: ' + e.message);
+            }
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function (e) {
+            addImportFiles(e.target.files);
+            e.target.value = '';
+        });
+
+        const dz = document.getElementById('dropzone');
+        dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); });
+        dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+        dz.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dz.classList.remove('dragover');
+            addImportFiles(e.dataTransfer.files);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderFileList();
+            loadImportBaseline();
+            loadStatistics();
+            loadConditionalSummary();
+            loadData();
+        });
+
+        async function loadStatistics() {
+            try {
+                const response = await fetch('/api/statistics');
+                const result = await response.json();
+                if (result.success) {
+                    const stats = result.statistics;
+                    document.getElementById('totalOutbound').textContent = stats.totalOutbound ?? 0;
+                    document.getElementById('recycled').textContent = stats.recycled ?? 0;
+                    document.getElementById('unrecycled').textContent = stats.unrecycled ?? 0;
+                    document.getElementById('recycleRate').textContent = (stats.recycleRate ?? 0) + '%';
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function anomalyRowHtml(row) {
+            return `<tr>
+                <td>${escapeHtml(String(row.id ?? ''))}</td>
+                <td>${escapeHtml(row.serial_no ?? '')}</td>
+                <td>${escapeHtml(row.anomaly_type ?? '')}</td>
+                <td>${escapeHtml(row.detail ?? '')}</td>
+                <td>${escapeHtml(row.source_files ?? '')}</td>
+                <td>${escapeHtml(String(row.batch_id ?? ''))}</td>
+                <td>${escapeHtml(row.created_at ?? '')}</td>
+            </tr>`;
+        }
+
+        async function loadAnomalies() {
+            const tbody = document.getElementById('anomalyTable');
+            tbody.innerHTML = '<tr><td colspan="7" class="loading">加载中…</td></tr>';
+            try {
+                const res = await fetch(`/api/anomalies?page=${anomalyPage}&pageSize=${anomalyPageSize}`);
+                const result = await res.json();
+                if (result.success) {
+                    const rows = result.data;
+                    const pag = result.pagination;
+                    anomalyTotalPages = pag.totalPages;
+                    anomalyTotalRecords = pag.total;
+                    if (!rows.length) {
+                        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">暂无异常记录</td></tr>';
+                    } else {
+                        tbody.innerHTML = rows.map(anomalyRowHtml).join('');
+                    }
+                    updateAnomalyPagination();
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="7" class="error">加载失败: ${escapeHtml(result.message || '')}</td></tr>`;
+                }
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="7" class="error">加载失败: ${escapeHtml(e.message)}</td></tr>`;
+            }
+        }
+
+        function updateAnomalyPagination() {
+            const start = anomalyTotalRecords === 0 ? 0 : (anomalyPage - 1) * anomalyPageSize + 1;
+            const end = Math.min(anomalyPage * anomalyPageSize, anomalyTotalRecords);
+            document.getElementById('anomalyPageInfo').textContent =
+                `显示第 ${start} - ${end} 条，共 ${anomalyTotalRecords} 条记录`;
+            const pageNumbers = document.getElementById('anomalyPageNumbers');
+            let html = '';
+            const maxButtons = 5;
+            let startPage = Math.max(1, anomalyPage - Math.floor(maxButtons / 2));
+            let endPage = Math.min(anomalyTotalPages, startPage + maxButtons - 1);
+            if (endPage - startPage < maxButtons - 1) {
+                startPage = Math.max(1, endPage - maxButtons + 1);
+            }
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button type="button" class="page-btn ${i === anomalyPage ? 'active' : ''}" onclick="goToAnomalyPage(${i})">${i}</button>`;
+            }
+            pageNumbers.innerHTML = html;
+        }
+
+        function goToAnomalyPage(page) {
+            if (page < 1 || page > anomalyTotalPages || page === anomalyPage) return;
+            anomalyPage = page;
+            loadAnomalies();
+        }
+
+        async function loadConditionalSummary() {
+            try {
+                const p = ledgerFilterParams();
+                const res = await fetch('/api/ledger/conditional-summary?' + p.toString());
+                const result = await res.json();
+                if (!result.success) {
+                    document.getElementById('condHint').textContent = result.message || '条件回收率加载失败';
+                    return;
+                }
+                const total = result.totalRows ?? 0;
+                const unrec = result.unrecycledCount ?? 0;
+                const rateNum = result.recycleRate;
+                document.getElementById('condTotal').textContent = total;
+                document.getElementById('condUnrec').textContent = unrec;
+                if (total === 0) {
+                    document.getElementById('condRate').textContent = '-';
+                    document.getElementById('condHint').textContent = '暂无数据或请调整筛选条件';
+                } else {
+                    document.getElementById('condRate').textContent = rateNum + '%';
+                    document.getElementById('condHint').textContent = '公式：1 − 未回收数 / 参与统计行数（服务端按当前筛选计算）';
+                }
+            } catch (e) {
+                console.error(e);
+                document.getElementById('condHint').textContent = '条件回收率加载失败';
+            }
+        }
+
+        /** 搜索：重置到第 1 页，刷新全局统计、条件回收率与列表（与 PRD 总台账单模块一致） */
+        async function searchLedger() {
+            currentPage = 1;
+            loadStatistics();
+            await loadConditionalSummary();
+            await loadData();
+            showToast('已查询');
+        }
+
+        async function clearLedgerFilters() {
+            document.getElementById('fSerial').value = '';
+            document.getElementById('fCustomer').value = '';
+            document.getElementById('fSales').value = '';
+            document.getElementById('fDateStart').value = '';
+            document.getElementById('fDateEnd').value = '';
+            currentPage = 1;
+            loadStatistics();
+            await loadConditionalSummary();
+            await loadData();
+            showToast('已清空');
+        }
+
+        function rowHtml(row) {
+            const st = row.recycle_status || '';
+            return `<tr>
+                <td>${escapeHtml(row.serial_no || '')}</td>
+                <td>${escapeHtml(row.material_code || '')}</td>
+                <td>${escapeHtml(row.material_name || '')}</td>
+                <td>${escapeHtml(row.spec || '')}</td>
+                <td>${escapeHtml(row.outbound_date || '')}</td>
+                <td>${escapeHtml(row.doc_no || '')}</td>
+                <td>${escapeHtml(row.salesperson || '')}</td>
+                <td>${escapeHtml(row.customer || '')}</td>
+                <td><span class="status-badge status-${st}">${escapeHtml(st)}</span></td>
+                <td>${escapeHtml(row.recycle_date || '-')}</td>
+            </tr>`;
+        }
+
+        async function loadData() {
+            const tbody = document.getElementById('dataTable');
+            tbody.innerHTML = '<tr><td colspan="10" class="loading">加载中…</td></tr>';
+            try {
+                const p = ledgerFilterParams();
+                p.set('page', String(currentPage));
+                p.set('pageSize', String(pageSize));
+                const response = await fetch('/api/ledger?' + p.toString());
+                const result = await response.json();
+                if (result.success) {
+                    const data = result.data;
+                    const pagination = result.pagination;
+                    totalPages = pagination.totalPages;
+                    totalRecords = pagination.total;
+
+                    if (!data.length) {
+                        tbody.innerHTML = '<tr><td colspan="10" class="empty-state">暂无数据</td></tr>';
+                    } else {
+                        tbody.innerHTML = data.map(rowHtml).join('');
+                    }
+                    updatePagination();
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="10" class="error">加载失败: ${escapeHtml(result.message || '')}</td></tr>`;
+                }
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="10" class="error">加载失败: ${escapeHtml(error.message)}</td></tr>`;
+            }
+        }
+
+        function updatePagination() {
+            const start = totalRecords === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+            const end = Math.min(currentPage * pageSize, totalRecords);
+            document.getElementById('pageInfo').textContent =
+                `显示第 ${start} - ${end} 条，共 ${totalRecords} 条记录`;
+
+            const pageNumbers = document.getElementById('pageNumbers');
+            let html = '';
+            const maxButtons = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+            if (endPage - startPage < maxButtons - 1) {
+                startPage = Math.max(1, endPage - maxButtons + 1);
+            }
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button type="button" class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            }
+            pageNumbers.innerHTML = html;
+        }
+
+        function goToPage(page) {
+            if (page < 1 || page > totalPages || page === currentPage) return;
+            currentPage = page;
+            loadData();
+        }
+
+        async function exportExcel() {
+            try {
+                const p = ledgerFilterParams();
+                const response = await fetch('/api/export?' + p.toString());
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = '销售出库总台账_' + new Date().toLocaleDateString() + '.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    showToast('Excel 已开始下载');
+                } else {
+                    showToast('导出失败');
+                }
+            } catch (e) {
+                showToast('导出失败: ' + e.message);
+            }
+        }
+    </script>
+</body>
+</html>
